@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>รายงานเงินห้อง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* สไตล์เสริมเล็กน้อย */
+    .glass {
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid rgba(2,6,23,0.06);
+      box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    }
+    .fade-in { animation: fade 0.35s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="min-h-screen bg-amber-50 text-slate-800">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+    <!-- Header -->
+    <header class="flex flex-col items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <!-- โลโก้และชื่อ ตรงกลาง -->
+      <div class="flex flex-col items-center gap-3 text-center">
+        <div class="w-20 h-20 sm:w-50 sm:h-24 rounded-2xl bg-white border border-amber-200 grid place-items-center shadow">
+          <div class="w-12 h-20 sm:w-12 sm:h-20 font-extrabold tracking-tight text-amber-700"><img src="maiwailaew.png"></div>
+        </div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight text-amber-800">รายงานเงินห้อง</h1>
+          <p class="text-amber-700/70 text-sm sm:text-base">ระบบรายงานจำนวนเงินห้อง และรายชื่อทั้งหมด</p>
+        </div>
+      </div>
+
+      <!-- นำทาง -->
+      <nav class="rounded-xl bg-white border border-amber-200 p-1 sm:p-2 flex gap-1 sm:gap-2">
+        <button data-tab="home" class="tab-btn active bg-amber-700 text-white font-semibold px-3 sm:px-4 py-2 rounded-lg transition-all duration-150 active:scale-[0.98]">ภาพรวม</button>
+        <button data-tab="list" class="tab-btn text-amber-800 font-semibold px-3 sm:px-4 py-2 rounded-lg hover:bg-amber-100 transition-all duration-150 active:scale-[0.98]">รายชื่อ</button>
+        <button data-tab="withdraw" class="tab-btn text-amber-800 font-semibold px-3 sm:px-4 py-2 rounded-lg hover:bg-amber-100 transition-all duration-150 active:scale-[0.98]">เบิกเงิน</button>
+        <button data-tab="qr" class="tab-btn text-amber-800 font-semibold px-3 sm:px-4 py-2 rounded-lg hover:bg-amber-100 transition-all duration-150 active:scale-[0.98]">สแกนจ่าย</button>
+      </nav>
+    </header>
+
+    <!-- Main content -->
+    <main class="space-y-6 sm:space-y-8">
+      <!-- หน้า: ภาพรวม -->
+      <section id="home" class="grid lg:grid-cols-2 gap-6 sm:gap-8 fade-in">
+        <!-- การ์ดแผนภูมิวงกลม -->
+        <div class="card p-5 sm:p-6 text-slate-800" style="--tw-shadow-color: rgba(146, 64, 14, 0.06);">
+          <h2 class="text-xl sm:text-2xl font-bold mb-4"><center>แผนภูมิวงกลม</center></h2>
+          <div class="grid md:grid-cols-2 gap-4 items-center">
+            <div class="relative mx-auto">
+              <canvas id="pieCanvas" width="260" height="260" aria-label="แผนภูมิวงกลมรายงานเงินห้อง"></canvas>
+              <!-- ค่ากลาง -->
+              <div id="centerLabel" class="absolute inset-0 grid place-items-center pointer-events-none">
+                <div class="text-center">
+                  <div class="text-sm text-slate-500">เงินทั้งหมด</div>
+                  <div id="centerTotalDisplay" class="text-2xl font-extrabold text-amber-700">-</div>
+                  <div class="text-xs text-slate-400 mt-1">เงินเบิก</div>
+                  <div id="centerWithdrawnDisplay" class="text-lg font-bold text-red-600">-</div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between bg-amber-50 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="inline-block w-3.5 h-3.5 rounded-full" style="background:#16a34a"></span>
+                  <span class="font-medium text-slate-700">เก็บได้</span>
+                </div>
+                <span id="collectedDisplay" class="font-bold text-slate-900">-</span>
+              </div>
+              <div class="flex items-center justify-between bg-amber-50 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="inline-block w-3.5 h-3.5 rounded-full" style="background:#d97706"></span>
+                  <span class="font-medium text-slate-700">ค้างชำระ</span>
+                </div>
+                <span id="dueDisplay" class="font-bold text-slate-900">-</span>
+              </div>
+              <div class="flex items-center justify-between bg-amber-50 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="inline-block w-3.5 h-3.5 rounded-full" style="background:#dc2626"></span>
+                  <span class="font-medium text-slate-700">เงินเบิก</span>
+                </div>
+                <span id="withdrawnDisplay" class="font-bold text-slate-900">-</span>
+              </div>
+              <div class="flex items-center justify-between bg-amber-50 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <span class="inline-block w-3.5 h-3.5 rounded-full" style="background:#f59e0b"></span>
+                  <span class="font-medium text-slate-700">ต่อคน</span>
+                </div>
+                <span id="perPersonDisplay" class="font-bold text-slate-900">-</span>
+              </div>
+              <div class="text-xs text-slate-500">ยอดเงินที่อัปเดตจาก "รายชื่อ"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- การ์ดสรุปตัวเลข -->
+        <div class="card p-5 sm:p-6 text-slate-800 grid gap-4">
+          <h2 class="text-xl sm:text-2xl font-bold">สรุปสถานะ</h2>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="rounded-xl bg-amber-50 p-4">
+              <div class="text-slate-600 text-sm">จำนวนนักเรียน</div>
+              <div id="studentCount" class="text-2xl font-extrabold text-slate-900">-</div>
+            </div>
+            <div class="rounded-xl bg-emerald-50 p-4">
+              <div class="text-slate-600 text-sm">เก็บได้</div>
+              <div id="collectedCount" class="text-2xl font-extrabold text-slate-900">-</div>
+            </div>
+            <div class="rounded-xl bg-amber-50 p-4">
+              <div class="text-slate-600 text-sm">ค้างชำระ</div>
+              <div id="dueCount" class="text-2xl font-extrabold text-slate-900">-</div>
+            </div>
+            <div class="rounded-xl bg-red-50 p-4">
+              <div class="text-slate-600 text-sm">เบิกไปแล้ว</div>
+              <div id="withdrawalCount" class="text-2xl font-extrabold text-slate-900">-</div>
+            </div>
+          </div>
+
+          <div class="rounded-xl bg-slate-50 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-slate-600">อัปเดตล่าสุด</span>
+              <span id="lastUpdated" class="font-medium text-slate-800">-</span>
+            </div>
+            <div class="text-slate-500 text-sm">ยอดเงินที่อัปเดตจาก "รายชื่อ"</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- หน้า: รายชื่อ -->
+      <section id="list" class="hidden fade-in">
+        <div class="card p-5 sm:p-6 text-slate-800" style="--tw-shadow-color: rgba(146, 64, 14, 0.06);">
+          <div class="flex flex-col sm:flex-row sm:items-end gap-4 mb-4">
+            <div class="grow">
+              <label class="block text-slate-600 text-sm mb-1">ค้นหารายชื่อ</label>
+              <input id="searchInput" type="text" placeholder="พิมพ์ชื่อ เช่น กฤติพงษ์, คณิศร"
+                     class="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400" />
+            </div>
+            <div class="hidden">
+              <label class="block text-slate-600 text-sm mb-1">ยอดต่อคน (บาท)</label>
+              <input id="feePerPersonInput" type="number" min="0" step="10" class="w-40 rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400" />
+            </div>
+            <button id="addStudentBtn" class="bg-amber-700 hover:bg-amber-800 active:scale-[0.98] transition-transform duration-150 text-white font-semibold px-5 py-3 rounded-xl">
+              เพิ่มรายชื่อ
+            </button>
+          </div>
+
+          <div id="listContainer" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+          <!-- โมดอลแก้ไขยอด -->
+          <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-40">
+            <div class="w-full max-w-md card p-6 text-slate-800">
+              <h3 class="text-xl font-bold mb-4">อัปเดตยอดชำระ</h3>
+              <div class="space-y-3">
+                <div>
+                  <div class="text-slate-600 text-sm">ชื่อนักเรียน</div>
+                  <div id="editName" class="font-semibold text-lg">-</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-slate-600 text-sm mb-1">ชำระแล้ว (บาท)</label>
+                    <input id="editPaid" type="number" min="0" class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-4 focus:ring-green-100 focus:border-green-400" />
+                  </div>
+                  <div>
+                    <label class="block text-slate-600 text-sm mb-1">ยอดทั้งหมด (บาท)</label>
+                    <input id="editTotal" type="number" min="0" class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400" />
+                  </div>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 mt-5">
+                <button id="editCancel" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-transform duration-150 active:scale-[0.98]">ยกเลิก</button>
+                <button id="editSave" class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition-transform duration-150 active:scale-[0.98]">บันทึก</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- หน้า: เบิกเงิน -->
+      <section id="withdraw" class="hidden fade-in">
+        <div class="card p-5 sm:p-6 text-slate-800" style="--tw-shadow-color: rgba(146, 64, 14, 0.06);">
+          <div class="flex flex-col sm:flex-row sm:items-end gap-4 mb-4">
+            <div class="grow">
+              <h2 class="text-xl sm:text-2xl font-bold mb-4">รายการเบิกเงิน</h2>
+            </div>
+            <button id="addWithdrawalBtn" class="bg-red-600 hover:bg-red-700 active:scale-[0.98] transition-transform duration-150 text-white font-semibold px-5 py-3 rounded-xl">
+              เพิ่มรายการเบิก
+            </button>
+          </div>
+
+          <div id="withdrawalContainer" class="space-y-3"></div>
+
+          <!-- โมดอลเพิ่มรายการเบิก -->
+          <div id="withdrawalModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-40">
+            <div class="w-full max-w-md card p-6 text-slate-800">
+              <h3 class="text-xl font-bold mb-4">เพิ่มรายการเบิกเงิน</h3>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-slate-600 text-sm mb-1">รายละเอียด</label>
+                  <input id="withdrawalDesc" type="text" placeholder="เช่น ซื้อของรางวัล, จัดงาน"
+                         class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-4 focus:ring-red-100 focus:border-red-400" />
+                </div>
+                <div>
+                  <label class="block text-slate-600 text-sm mb-1">จำนวนเงิน (บาท)</label>
+                  <input id="withdrawalAmount" type="number" min="0" step="10"
+                         class="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-4 focus:ring-red-100 focus:border-red-400" />
+                </div>
+              </div>
+              <div class="flex justify-end gap-2 mt-5">
+                <button id="withdrawalCancel" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-transform duration-150 active:scale-[0.98]">ยกเลิก</button>
+                <button id="withdrawalSave" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-transform duration-150 active:scale-[0.98]">บันทึก</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- หน้า: สแกนจ่ายเงินห้อง -->
+      <section id="qr" class="hidden fade-in">
+        <div class="card p-5 sm:p-6 text-slate-800" style="--tw-shadow-color: rgba(146, 64, 14, 0.06);">
+          <h2 class="text-xl sm:text-2xl font-bold mb-4 text-slate-900"><center>สแกนจ่ายเงินห้อง</center></h2>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="flex flex-col items-center justify-center">
+              <div class="bg-white rounded-2xl p-5 shadow-inner">
+                <div id="qrBox" class="w-[260px] h-[260px] grid place-items-center">
+                  <div><img src="kaelaew.png"></div>
+                </div>
+              </div>
+              <div class="mt-4 text-center">
+                <div class="text-slate-600 text-sm">ชื่อบัญชี</div>
+                <div id="showAccName" class="font-bold text-slate-900">-</div>
+                <div class="text-slate-600 text-sm mt-2">หมายเลขบัญชี</div>
+                <div id="showAccNo" class="font-bold text-slate-900">-</div>
+              <ul class="space-y-1 text-xs text-slate-500">
+                    <li>• ถ่ายภาพสลิปให้ชัดเจน อ่านได้ทุกตัวอักษร</li>
+                    <li>• ตรวจสอบจำนวนเงินให้ถูกต้อง</li>
+                    <li>• อย่าลืมอัปเดตยอดในรายชื่อ</li>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+
+        
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    // -------------------------
+    // ข้อมูลตัวอย่างนักเรียน
+    // -------------------------
+    const state = {
+      feePerPerson: 120, // บาทต่อคน
+      students: [
+        { id: 1, name: 'กฤติพงศ์ บรรเจิด', paid: 0, total: 120 },
+        { id: 2, name: 'คณิศร ปัญญานาค', paid: 0, total: 120 },
+        { id: 3, name: 'ชยณัฐ ภูมิชัยชนะ', paid: 0,   total: 120 },
+        { id: 4, name: 'ชัยวัฒน์ พรมจันทร์', paid: 0, total: 120 },
+        { id: 5, name: 'ดนัย ผ่องพันธ์', paid: 0, total: 120 },
+        { id: 6, name: 'ถิรวิทย์ สาลีทอง', paid: 0, total: 120 },
+        { id: 7, name: 'ถิรศักดิ์ ตะระสา', paid: 0, total: 120 },
+        { id: 8, name: 'ธนชัย นันทะโย', paid: 0, total: 120 },
+        { id: 9, name: 'ธนดล นามศร', paid: 0,   total: 120 },
+        { id: 10, name: 'ธีธัชพงษ์ อินทรสมบัติ', paid: 0, total: 120 },
+        { id: 11, name: 'ธีรวีร์ แสนมุข', paid: 0, total: 120 },
+        { id: 12, name: 'นาวิน พาโคกทม', paid: 0, total: 120 },
+        { id: 13, name: 'เบญจฆเนศ ศรีปัญญาภรณ์', paid: 0, total: 120 },
+        { id: 14, name: 'ปกป้อง พิบาล', paid: 0, total: 120 },
+        { id: 15, name: 'ปริพัฒน์ สร้อยนาค', paid: 0,   total: 120 },
+        { id: 16, name: 'พชร นามา', paid: 0, total: 120 },
+        { id: 17, name: 'ภาณุพัทธ์ สำอางค์', paid: 0, total: 120 },
+        { id: 18, name: 'มาโปรด ดวงรัศมี', paid: 0, total: 120 },
+        { id: 19, name: 'วชิระพงษ์ อิ่มใจ', paid: 0, total: 120 },
+        { id: 20, name: 'วรพงษ์ ผมงาม', paid: 0, total: 120 },
+        { id: 21, name: 'ศตคุณ เย็นอารมย์', paid: 0,   total: 120 },
+        { id: 22, name: 'ศุภกร เชื้อเมืองพาน', paid: 0, total: 120 },
+        { id: 23, name: 'สิรภัทร แถลงธรรม', paid: 0, total: 120 },
+        { id: 24, name: 'อนนทพร บรรจงสมบัติ', paid: 0, total: 120 },
+        { id: 25, name: 'อนันตพงษ์ วงศ์อนุ', paid: 0, total: 120 },
+        { id: 26, name: 'จีรนันท์ สุมนดิษฐ์', paid: 0, total: 120 },
+        { id: 27, name: 'ชนิดาภา ภู่ยินดี', paid: 0,   total: 120 },
+        { id: 28, name: 'ณัฐรุจา ศิลาพจน์', paid: 0, total: 120 },
+        { id: 29, name: 'ประภัสสร ศรีทะ', paid: 0, total: 120 },
+        { id: 30, name: 'ปราดถนา บัวยะ', paid: 0, total: 120 },
+        { id: 31, name: 'พิชญาภา เป็ดทอง', paid: 0, total: 120 },
+        { id: 32, name: 'พิชามญชุ์ บุญคุ้ม', paid: 0,   total: 120 },
+        { id: 33, name: 'พิมพ์ศิกร แก้วคำพัฒน์ธนา', paid: 0, total: 120 },
+        { id: 34, name: 'รัชดาพร อินทร์เปือย', paid: 0, total: 120 },
+        { id: 35, name: 'สาวิณี ยิ่งอินทร์', paid: 0, total: 120 },
+        { id: 36, name: 'สุชาดา อินทานุรักษ์', paid: 0, total: 120 },
+        { id: 37, name: 'สุภาวดีภรณ์ กิจวิขาม', paid: 0, total: 120 },
+        { id: 38, name: 'หทัยชนก เจตเกษตรการณ์', paid: 0,   total: 120 },
+        { id: 39, name: 'ภคพร ตระกูลดนย์', paid: 0, total: 120 }
+      ],
+      withdrawals: [
+      ],
+      lastUpdated: new Date()
+    };
+
+    // Utility: จัดรูปแบบเงิน
+    const fmt = (n) => n.toLocaleString('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 });
+    const el = (id) => document.getElementById(id);
+
+    // -------------------------
+    // สลับแท็บ
+    // -------------------------
+    const sections = {
+      home: document.getElementById('home'),
+      list: document.getElementById('list'),
+      withdraw: document.getElementById('withdraw'),
+      qr: document.getElementById('qr')
+    };
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const target = btn.getAttribute('data-tab');
+        Object.values(sections).forEach(s=>s.classList.add('hidden'));
+        sections[target].classList.remove('hidden');
+        tabBtns.forEach(b=>{
+          const isActive = b===btn;
+          b.classList.toggle('bg-amber-700', isActive);
+          b.classList.toggle('text-white', isActive);
+          b.classList.toggle('text-amber-800', !isActive);
+          b.classList.toggle('hover:bg-amber-100', !isActive);
+        });
+        if (target==='home') drawDashboard();
+        if (target==='list') renderList();
+        if (target==='withdraw') renderWithdrawals();
+      });
+    });
+
+    // -------------------------
+    // แผนภูมิวงกลม (Canvas)
+    // -------------------------
+    const pieColors = ['#10b981', '#f59e0b', '#dc2626']; // เก็บได้, ค้างชำระ, เบิกไปแล้ว
+    function drawPie(canvas, parts) {
+      const ctx = canvas.getContext('2d');
+      const size = Math.min(canvas.width, canvas.height);
+      const r = size/2 - 6;
+      const cx = canvas.width/2;
+      const cy = canvas.height/2;
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      // วงกลมพื้นหลัง
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.fillStyle = '#eef2ff';
+      ctx.fill();
+
+      const sum = parts.reduce((a,b)=>a+b,0) || 1;
+      let start = -Math.PI/2;
+      parts.forEach((val, i)=>{
+        const angle = (val/sum)*Math.PI*2;
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,r,start,start+angle);
+        ctx.closePath();
+        ctx.fillStyle = pieColors[i%pieColors.length];
+        ctx.fill();
+        start += angle;
+      });
+
+      // รูวงใน (โดนัท)
+      ctx.beginPath();
+      ctx.arc(cx, cy, r*0.62, 0, Math.PI*2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    }
+
+    function drawDashboard() {
+      const total = state.students.reduce((s,st)=>s+st.total,0);
+      const collected = state.students.reduce((s,st)=>s+Math.min(st.paid, st.total),0);
+      const withdrawn = state.withdrawals.reduce((s,w)=>s+w.amount,0);
+      const due = Math.max(total - collected, 0);
+
+      el('collectedDisplay').textContent = fmt(collected);
+      el('dueDisplay').textContent = fmt(due);
+      el('withdrawnDisplay').textContent = fmt(withdrawn);
+      el('centerTotalDisplay').textContent = fmt(total);
+      el('centerWithdrawnDisplay').textContent = fmt(withdrawn);
+      el('perPersonDisplay').textContent = fmt(state.feePerPerson);
+
+      el('studentCount').textContent = state.students.length.toString();
+      const fullyPaid = state.students.filter(st=>st.paid>=st.total && st.total>0).length;
+      const hasDue = state.students.filter(st=>st.paid<st.total).length;
+      el('collectedCount').textContent = `${fullyPaid} คน`;
+      el('dueCount').textContent = `${hasDue} คน`;
+      el('withdrawalCount').textContent = `${state.withdrawals.length} รายการ`;
+
+      el('lastUpdated').textContent = state.lastUpdated.toLocaleString('th-TH');
+
+      const canvas = el('pieCanvas');
+      drawPie(canvas, [collected, due, withdrawn]);
+    }
+
+    // -------------------------
+    // รายชื่อ + ค้นหา + เพิ่ม/แก้ไข
+    // -------------------------
+    const listContainer = el('listContainer');
+    const searchInput = el('searchInput');
+    const feeInput = el('feePerPersonInput');
+    feeInput.value = state.feePerPerson;
+
+    function renderList() {
+      const q = (searchInput.value || '').trim().toLowerCase();
+      const items = q ? state.students.filter(st => st.name.toLowerCase().includes(q)) : [];
+
+      // ล้างรายการเก่า
+      listContainer.replaceChildren();
+
+      items.forEach(st=>{
+        const due = Math.max(st.total - st.paid, 0);
+        const card = document.createElement('div');
+        card.className = 'rounded-2xl border border-slate-200 bg-white p-4 grid gap-2';
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="font-bold text-slate-900 text-lg">${st.name}</div>
+              <div class="text-slate-500 text-sm">ยอดทั้งหมด: ${fmt(st.total)}</div>
+            </div>
+            <span class="px-2 py-1 rounded-md text-xs ${due>0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}">
+              ${due>0 ? 'ค้างชำระ' : 'ชำระครบ'}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="bg-slate-50 rounded-lg px-3 py-2">
+              <div class="text-slate-600 text-xs">ชำระแล้ว</div>
+              <div class="font-semibold text-slate-900">${fmt(Math.min(st.paid, st.total))}</div>
+            </div>
+            <div class="bg-slate-50 rounded-lg px-3 py-2">
+              <div class="text-slate-600 text-xs">ค้าง</div>
+              <div class="font-semibold text-slate-900">${fmt(due)}</div>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-2">
+            <button data-id="${st.id}" class="edit-btn bg-amber-700 hover:bg-amber-800 text-white font-medium px-3 py-2 rounded-lg transition-transform duration-150 active:scale-[0.98]">อัปเดตยอด</button>
+            <button data-id="${st.id}" class="pay-btn bg-emerald-600 hover:opacity-90 text-white font-medium px-3 py-2 rounded-lg transition-transform duration-150 active:scale-[0.98]">ทำเครื่องหมายว่าชำระครบ</button>
+            <button data-id="${st.id}" class="del-btn bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 rounded-lg transition-transform duration-150 active:scale-[0.98]">ลบ</button>
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+
+      // ผูกปุ่ม
+      listContainer.querySelectorAll('.edit-btn').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const id = +b.getAttribute('data-id');
+          openEditModal(id);
+        });
+      });
+      listContainer.querySelectorAll('.pay-btn').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const id = +b.getAttribute('data-id');
+          const st = state.students.find(s=>s.id===id);
+          if (!st) return;
+          st.paid = st.total;
+          state.lastUpdated = new Date();
+          renderList();
+          drawDashboard();
+        });
+      });
+      listContainer.querySelectorAll('.del-btn').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          const id = +b.getAttribute('data-id');
+          const st = state.students.find(s=>s.id===id);
+          if (!st) return;
+          if (confirm(`ต้องการลบ "${st.name}" ใช่หรือไม่?`)) {
+            state.students = state.students.filter(s=>s.id!==id);
+            state.lastUpdated = new Date();
+            renderList();
+            drawDashboard();
+          }
+        });
+      });
+    }
+
+    // ค้นหาแบบเรียลไทม์
+    searchInput.addEventListener('input', renderList);
+
+    // เปลี่ยนยอดต่อคน
+    feeInput.addEventListener('change', ()=>{
+      const v = Math.max(0, Number(feeInput.value||0));
+      state.feePerPerson = v;
+      state.students = state.students.map(s=>({ ...s, total: v }));
+      state.lastUpdated = new Date();
+      renderList();
+      drawDashboard();
+    });
+
+    // เพิ่มรายชื่อ
+    el('addStudentBtn').addEventListener('click', ()=>{
+      const name = prompt('กรอกชื่อนักเรียน:');
+      if (!name) return;
+      const id = Math.max(0, ...state.students.map(s=>s.id))+1;
+      state.students.push({ id, name: name.trim(), paid: 0, total: state.feePerPerson });
+      state.lastUpdated = new Date();
+      renderList();
+      drawDashboard();
+    });
+
+    // โมดอลแก้ไขยอด
+    const editModal = el('editModal');
+    let editingId = null;
+
+    function openEditModal(id){
+      const st = state.students.find(s=>s.id===id);
+      if (!st) return;
+      editingId = id;
+      el('editName').textContent = st.name;
+      el('editPaid').value = st.paid;
+      el('editTotal').value = st.total;
+      editModal.classList.remove('hidden');
+      editModal.classList.add('flex');
+    }
+    function closeEditModal(){
+      editModal.classList.add('hidden');
+      editModal.classList.remove('flex');
+      editingId = null;
+    }
+    el('editCancel').addEventListener('click', closeEditModal);
+    editModal.addEventListener('click', (e)=>{ if (e.target===editModal) closeEditModal(); });
+    el('editSave').addEventListener('click', ()=>{
+      const st = state.students.find(s=>s.id===editingId);
+      if (!st) return;
+      const paid = Math.max(0, Number(el('editPaid').value||0));
+      const total = Math.max(0, Number(el('editTotal').value||0));
+      st.paid = paid;
+      st.total = total;
+      state.lastUpdated = new Date();
+      closeEditModal();
+      renderList();
+      drawDashboard();
+    });
+
+    // -------------------------
+    // เบิกเงิน
+    // -------------------------
+    const withdrawalContainer = el('withdrawalContainer');
+    
+    function renderWithdrawals() {
+      withdrawalContainer.replaceChildren();
+      
+      if (state.withdrawals.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-center py-8 text-slate-500';
+        empty.textContent = 'ยังไม่มีรายการเบิกเงิน';
+        withdrawalContainer.appendChild(empty);
+        return;
+      }
+      
+      state.withdrawals.forEach(w => {
+        const item = document.createElement('div');
+        item.className = 'rounded-xl border border-slate-200 bg-white p-4 flex items-center justify-between';
+        item.innerHTML = `
+          <div>
+            <div class="font-semibold text-slate-900">${w.description}</div>
+            <div class="text-slate-500 text-sm">${w.date.toLocaleDateString('th-TH')}</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="font-bold text-red-600">${fmt(w.amount)}</div>
+            <button data-id="${w.id}" class="del-withdrawal-btn bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 rounded-lg transition-transform duration-150 active:scale-[0.98]">ลบ</button>
+          </div>
+        `;
+        withdrawalContainer.appendChild(item);
+      });
+      
+      // ผูกปุ่มลบ
+      withdrawalContainer.querySelectorAll('.del-withdrawal-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = +b.getAttribute('data-id');
+          const w = state.withdrawals.find(w => w.id === id);
+          if (!w) return;
+          if (confirm(`ต้องการลบรายการ "${w.description}" ใช่หรือไม่?`)) {
+            state.withdrawals = state.withdrawals.filter(w => w.id !== id);
+            state.lastUpdated = new Date();
+            renderWithdrawals();
+            drawDashboard();
+          }
+        });
+      });
+    }
+
+    // โมดอลเพิ่มรายการเบิก
+    const withdrawalModal = el('withdrawalModal');
+    
+    function openWithdrawalModal() {
+      el('withdrawalDesc').value = '';
+      el('withdrawalAmount').value = '';
+      withdrawalModal.classList.remove('hidden');
+      withdrawalModal.classList.add('flex');
+    }
+    
+    function closeWithdrawalModal() {
+      withdrawalModal.classList.add('hidden');
+      withdrawalModal.classList.remove('flex');
+    }
+    
+    el('addWithdrawalBtn').addEventListener('click', openWithdrawalModal);
+    el('withdrawalCancel').addEventListener('click', closeWithdrawalModal);
+    withdrawalModal.addEventListener('click', (e) => { if (e.target === withdrawalModal) closeWithdrawalModal(); });
+    
+    el('withdrawalSave').addEventListener('click', () => {
+      const desc = (el('withdrawalDesc').value || '').trim();
+      const amount = Math.max(0, Number(el('withdrawalAmount').value || 0));
+      
+      if (!desc || amount <= 0) {
+        alert('กรุณากรอกรายละเอียดและจำนวนเงินให้ครบถ้วน');
+        return;
+      }
+      
+      const id = Math.max(0, ...state.withdrawals.map(w => w.id)) + 1;
+      state.withdrawals.push({
+        id,
+        description: desc,
+        amount,
+        date: new Date()
+      });
+      
+      state.lastUpdated = new Date();
+      closeWithdrawalModal();
+      renderWithdrawals();
+      drawDashboard();
+    });
+
+    // -------------------------
+    // คิวอาร์โค้ด (QR)
+    // ใช้ข้อความแบบทั่วไปเพื่อให้สแกนแล้วเห็นรายละเอียดการชำระ
+    // -------------------------
+
+    // Mini QR library (QRCode for JavaScript - minimal, inline)
+    // Source: https://github.com/davidshimjs/qrcodejs (embedded for offline use)
+    // License: MIT
+    // Begin qrcode.js (minified)
+    /*! qrcode.js v1.0.0 (MIT) */
+    !function(o){function t(o){this.mode=c, this.data=o}function e(o,t){this.typeNumber=o,this.errorCorrectLevel=t,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}function n(o,t){if(void 0==o.length)throw new Error(o.length+"/"+t);for(var e=0;e<o.length&&0==o[e];)e++;this.num=Array(o.length-e+t);for(var n=0;n<o.length-e;n++)this.num[n]=o[n+e]}function r(o,t){this.totalCount=o,this.dataCount=t}function i(){for(var o=0,t=0,e=arguments.length;t<e;t++)o+=arguments[t];return o}function s(o,t){this.buffer=[],this.length=0,void 0!=o&&void 0!=t&&this.put(o,t)}var u={PAD0:236,PAD1:17},c=4,a=2,f=0,h=1,l=2,d=3,p={L:1,M:0,Q:3,H:2},g=[[],[new r(19,7),new r(16,10),new r(13,13),new r(9,17)],[new r(34,10),new r(28,16),new r(22,22),new r(16,28)],[new r(55,15),new r(44,26),new r(34,18),new r(26,22)],[new r(80,20),new r(64,18),new r(48,26),new r(36,16)],[new r(108,26),new r(86,24),new r(62,18),new r(46,22)],[new r(136,18),new r(108,16),new r(76,24),new r(60,28)],[new r(156,20),new r(124,18),new r(88,18),new r(66,26)],[new r(194,24),new r(154,22),new r(110,22),new r(86,26)],[new r(232,30),new r(182,22),new r(132,20),new r(100,24)],[new r(274,18),new r(216,26),new r(154,24),new r(122,28)],[new r(324,20),new r(254,30),new r(180,28),new r(140,24)],[new r(370,24),new r(290,22),new r(206,26),new r(158,28)],[new r(428,26),new r(334,22),new r(244,26),new r(180,28)],[new r(461,30),new r(365,24),new r(261,20),new r(197,24)],[new r(523,22),new r(415,24),new r(295,30),new r(223,24)],[new r(589,24),new r(453,28),new r(325,24),new r(253,30)],[new r(647,28),new r(507,28),new r(367,28),new r(283,28)],[new r(721,30),new r(563,26),new r(397,28),new r(313,28)],[new r(795,28),new r(627,26),new r(445,26),new r(341,26)],[new r(861,28),new r(669,26),new r(485,26),new r(385,26)],[new r(932,28),new r(714,26),new r(512,28),new r(406,26)],[new r(1006,28),new r(782,28),new r(568,28),new r(442,26)],[new r(1094,30),new r(860,28),new r(614,28),new r(464,28)],[new r(1174,30),new r(914,28),new r(664,28),new r(514,28)],[new r(1276,26),new r(1000,28),new r(718,28),new r(538,28)],[new r(1370,28),new r(1062,28),new r(754,28),new r(596,28)],[new r(1468,30),new r(1128,28),new r(808,28),new r(628,28)],[new r(1531,30),new r(1193,28),new r(871,28),new r(661,28)],[new r(1631,30),new r(1267,28),new r(911,28),new r(701,28)],[new r(1735,30),new r(1373,28),new r(985,28),new r(745,28)],];e.prototype={addData:function(o){this.dataList.push(new t(o)),this.dataCache=null},isDark:function(o,t){if(null==this.modules)throw new Error("QR Code is not built yet");return this.modules[o][t]},getModuleCount:function(){return this.moduleCount},make:function(){if(this.typeNumber<1){for(var o=1;o<40;o++){for(var t=new e(o,this.errorCorrectLevel),n=0;n<this.dataList.length;n++)t.addData(this.dataList[n].data);if(t.makeImpl(),t.getDataCache().length<=e.getMaxDataCount(o,this.errorCorrectLevel))return this.typeNumber=o,void(this.modules=t.modules)}this.typeNumber=40}this.makeImpl()},makeImpl:function(){var o=this.typeNumber,t=p[this.errorCorrectLevel],e=e;this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var r=0;r<this.moduleCount;r++){this.modules[r]=new Array(this.moduleCount);for(var i=0;i<this.moduleCount;i++)this.modules[r][i]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(!0,!0),this.typeNumber>=7&&this.setupTypeNumber(!0),this.mapData(this.createData(this.typeNumber,t),t)},setupPositionProbePattern:function(o,t){for(var e=-1;e<=7;e++)if(!(o+e<=-1||this.moduleCount<=o+e))for(var n=-1;n<=7;n++)t+n<=-1||this.moduleCount<=t+n||(this.modules[o+e][t+n]=e>=0&&e<=6&&(0==n||6==n)||n>=0&&n<=6&&(0==e||6==e)||e>=2&&e<=4&&n>=2&&n<=4)},getBestMaskPattern:function(){for(var o=0,t=0,e=0;e<8;e++){this.makeImpl(!1,e);var n=h.getLostPoint(this);(0==e||n<o)&&(o=n,t=e)}return t},createData:function(o,t){for(var e=n.createData(this.dataList,o,t),r=0,i=0;i<e.length;i++)r+=e[i].length;for(var s=new Array(r),u=0,i=0;i<e.length;i++)for(var c=0;c<e[i].length;c++)s[u++]=e[i][c];return s},getDataCache:function(){if(null==this.dataCache){for(var o=0,t=0;t<this.dataList.length;t++)o+=this.dataList[t].data.length;this.dataCache=n.createData(this.dataList,this.typeNumber,p[this.errorCorrectLevel]);}return this.dataCache},setupPositionAdjustPattern:function(){for(var o=h.getPatternPosition(this.typeNumber),t=0;t<o.length;t++)for(var e=0;e<o.length;e++){var n=o[t],r=o[e];if(null==this.modules[n][r])for(var i=-2;i<=2;i++)for(var s=-2;s<=2;s++)this.modules[n+i][r+s]=-2==i||2==i||-2==s||2==s||0==i&&0==s}},setupTimingPattern:function(){for(var o=8;o<this.moduleCount-8;o++)null==this.modules[o][6]&&(this.modules[o][6]=o%2==0),null==this.modules[6][o]&&(this.modules[6][o]=o%2==0)},setupTypeNumber:function(o){for(var t=h.getBCHTypeNumber(this.typeNumber),e=0;e<18;e++){var n=!o&&1==(t>>e&1);this.modules[Math.floor(e/3)][e%3+this.moduleCount-8-3]=n}},setupTypeInfo:function(o,t){for(var e=p[this.errorCorrectLevel]<<3|t,n=h.getBCHTypeInfo(e),r=0;r<15;r++){var i=!o&&1==(n>>r&1);r<6?this.modules[r][8]=i:r<8?this.modules[r+1][8]=i:this.modules[this.moduleCount-15+r][8]=i}for(r=0;r<15;r++){i=!o&&1==(n>>r&1);r<8?this.modules[8][this.moduleCount-r-1]=i:r<9?this.modules[8][15-r-1+1]=i:this.modules[8][15-r-1]=i}this.modules[this.moduleCount-8][8]=!o},mapData:function(o,t){for(var e=h.getMaskFunction(this.getBestMaskPattern()),n=h.getPatternPosition(this.typeNumber),r=0,i=this.moduleCount-1,s=this.moduleCount-1;s>0;s-=2)6==s&&s--;for(;i>=0;i--){for(var u=0,c=0;c<2;c++)for(var a=0;a<this.moduleCount;a++){var f=i%2?this.moduleCount-1-a:a;if(null==this.modules[f][s-c]){var l=!1;r<o.length&&(l=1==o[r>>3]>>(7-(7&r))&1,r++),this.modules[f][s-c]=e(f,s-c)?!l:l}}i--,i>=0||(i=0)}}},e.getMaxDataCount=function(o,t){for(var e=0,n=g[o][t].totalCount,r=g[o][t].dataCount,i=0;i<o;i++)e+=g[i][t].totalCount;return r},h={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134]],getPatternPosition:function(o){return h.PATTERN_POSITION_TABLE[o-1]},getMaskFunction:function(o){switch(o){case 0:return function(o,t){return(o+t)%2==0};case 1:return function(o,t){return o%2==0};case 2:return function(o,t){return t%3==0};case 3:return function(o,t){return(o+t)%3==0};case 4:return function(o,t){return(Math.floor(o/2)+Math.floor(t/3))%2==0};case 5:return function(o,t){return o*t%2+o*t%3==0};case 6:return function(o,t){return(o*t%2+o*t%3)%2==0};case 7:return function(o,t){return(o*t%3+o+t)%2==0};default:throw new Error("bad maskPattern:"+o)}},getErrorCorrectPolynomial:function(o){for(var t=new n([1],0),e=0;e<o;e++)t=t.multiply(new n([1,h.gexp(e)],0));return t},glog:function(o){if(1>o)throw new Error("glog("+o+")");return h.LOG_TABLE[o]},gexp:function(o){for(;o<0;)o+=255;for(;o>=256;)o-=255;return h.EXP_TABLE[o]},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256),RS_BLOCK_TABLE:g,QRUtil:h,getBCHTypeInfo:function(o){for(var t=o<<10;t^=h.gexp(h.glog(t)>>5)<<10,t^=1335,0!=(t>>15);)t^=1335;return o<<10|t},getBCHTypeNumber:function(o){for(var t=o<<12;t^=h.gexp(h.glog(t)>>5)<<12,t^=7973,0!=(t>>19);)t^=7973;return o<<12|t},getPatternPosition:h.getPatternPosition,getMaskFunction:h.getMaskFunction,getErrorCorrectPolynomial:h.getErrorCorrectPolynomial,glog:h.glog,gexp:h.gexp,getRSBlocks:function(o,t){var e=h.RS_BLOCK_TABLE[o-1][t],n=[];for(var i=0;i<e.length;i++)for(var s=e[i],u=0;u<s.length;u++)n.push(new r(s[u][0],s[u][1]));return n},createData:function(o,t,e){for(var r=h.getRSBlocks(o,t),i=new s,u=0;u<e.length;u++){var c=e[u];i.put(4,4),i.put(c.data.length,8);for(var a=0;a<c.data.length;a++)i.put(c.data.charCodeAt(a),8)}for(var f=0,h=0,u=0;u<r.length;u++)h+=r[u].dataCount;for(;i.getLengthInBits()+4<=8*h;)i.put(0,1);for(;i.getLengthInBits()%8!=0;)i.put(0,1);for(var l=[],d=0;d<h;d++)l[d]=255&(~(i.buffer[Math.floor(d/8)]>>(7-d%8))&255);for(var p=0,u=0;u<r.length;u++)p+=r[u].totalCount;for(var g=new Array(p),m=0,v=0;v<r.length;v++){var y=r[v],b=y.dataCount,_=new Array(y.totalCount);for(d=0;d<b;d++)_[d]=l[m++];var w=h.getErrorCorrectPolynomial(y.totalCount-b),E=new n(_,w.getLength()-1).mod(w);for(d=0;d<w.getLength()-1;d++)_[b+d]=E.get(d);g[v]=_}for(var S=0,C=0;C<p;C++){for(v=0;v<r.length;v++){var y=r[v];C<y.totalCount&&(g[v][C]!=null&&(l[S++]=g[v][C]))}}return l},getLostPoint:function(o){for(var t=o.getModuleCount(),e=0,n=0;n<t;n++)for(var r=0;r<t;r++){for(var i=0,s=o.isDark(n,r),u=-1;u<=1;u++)if(!(n+u<0||t<=n+u))for(var c=-1;c<=1;c++)r+c<0||t<=r+c||0==u&&0==c||s==o.isDark(n+u,r+c)&&i++;i>5&&(e+=3+i-5)}for(n=0;n<t-1;n++)for(r=0;r<t-1;r++){var a=0;o.isDark(n,r)&&a++,o.isDark(n+1,r)&&a++,o.isDark(n,r+1)&&a++,o.isDark(n+1,r+1)&&a++,0!=a&&4!=a||(e+=3)}for(n=0;n<t;n++)for(r=0;r<t-6;r++)o.isDark(n,r)&&!o.isDark(n,r+1)&&o.isDark(n,r+2)&&o.isDark(n,r+3)&&o.isDark(n,r+4)&&!o.isDark(n,r+5)&&o.isDark(n,r+6)&&(e+=40);for(r=0;r<t;r++)for(n=0;n<t-6;n++)o.isDark(n,r)&&!o.isDark(n+1,r)&&o.isDark(n+2,r)&&o.isDark(n+3,r)&&o.isDark(n+4,r)&&!o.isDark(n+5,r)&&o.isDark(n+6,r)&&(e+=40);for(var f=0,h=0,n=0;n<t;n++)for(r=0;r<t;r++)o.isDark(n,r)&&f++;h=Math.abs(100*f/t/t-50)/5*10;return e+=h},};for(var m=0;m<256;m++)h.EXP_TABLE[m]=m<8?1<<m:h.EXP_TABLE[m-4]^h.EXP_TABLE[m-5]^h.EXP_TABLE[m-6]^h.EXP_TABLE[m-8];for(m=0;m<256;m++)h.LOG_TABLE[h.EXP_TABLE[m]]=m;n.prototype={get:function(o){return this.num[o]},getLength:function(){return this.num.length},multiply:function(o){for(var t=new Array(this.getLength()+o.getLength()-1),e=0;e<this.getLength();e++)for(var r=0;r<o.getLength();r++)t[e+r]^=h.gexp(h.glog(this.get(e))+h.glog(o.get(r)));return new n(t,0)},mod:function(o){if(this.getLength()-o.getLength()<0)return this;for(var t=h.glog(this.get(0))-h.glog(o.get(0)),e=new Array(this.getLength()),r=0;r<this.getLength();r++)e[r]=this.get(r);for(r=0;r<o.getLength();r++)e[r]^=h.gexp(h.glog(o.get(r))+t);return new n(e,0).mod(o)},getLengthInBits:function(){return 8*this.num.length},get:function(o){return this.num[o]}};s.prototype={getBuffer:function(){return this.buffer},getLengthInBits:function(){return this.length},put:function(o,t){for(var e=0;e<t;e++)this.putBit(1==!!(o>>t-1-e&1))},putBit:function(o){this.buffer.push(o?1:0),this.length++}};o.QRCode=e,o.QRErrorCorrectLevel=p}(window);
+
+    function makeQR(elContainer, text, size=256) {
+      // ล้างของเดิม
+      elContainer.replaceChildren();
+      // ใช้ไลบรารีที่ฝังไว้
+      const q = new QRCode(1, 'M');
+      q.addData(text);
+      q.make();
+      const count = q.getModuleCount();
+      const scale = Math.floor(size / (count + 8)); // เผื่อขอบ
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const dim = (count + 8) * scale;
+      canvas.width = dim; canvas.height = dim;
+
+      // พื้นหลังขาว
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,dim,dim);
+      // วาดจุด
+      for (let r=0; r<count; r++){
+        for (let c=0; c<count; c++){
+          ctx.fillStyle = q.isDark(r,c) ? '#111827' : '#ffffff';
+          ctx.fillRect((c+4)*scale, (r+4)*scale, scale, scale);
+        }
+      }
+      elContainer.appendChild(canvas);
+    }
+    
+
+
+    // -------------------------
+    // เริ่มต้น
+    // -------------------------
+    // เปิดหน้าแรก
+    drawDashboard();
+    renderList();
+    renderWithdrawals();
+    // แสดงข้อมูลบัญชีในหน้า QR เริ่มต้น (ค่าคงที่)
+    showAccName.textContent = 'เด็กชายนาวิน พาโคกทม';
+    showAccNo.textContent = 'กสิกร (MAKE) 215-1-97082-9';
+
+  </script>
+
+
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97ce233d324a10d6',t:'MTc1NzQ5OTA0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
